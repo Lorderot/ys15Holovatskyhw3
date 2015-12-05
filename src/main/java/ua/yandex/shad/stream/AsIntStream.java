@@ -163,15 +163,17 @@ public class AsIntStream implements IntStream {
             IntPredicate predicate) {
 
         DynamicList<Integer> result = new DynamicList<>();
-        for (Integer i : streamGeneratedFromElement)
+        for (Integer i : streamGeneratedFromElement) {
             if (predicate.test(i)) {
                 result.add(i);
             }
+        }
         return result;
     }
     
-    private static DynamicList<Integer> map(DynamicList<Integer> streamGeneratedFromElement,
-                                  IntUnaryOperator mapper) {
+    private static DynamicList<Integer> map(
+            DynamicList<Integer> streamGeneratedFromElement,
+            IntUnaryOperator mapper) {
         for (int i = 0; i < streamGeneratedFromElement.size(); i++) {
             streamGeneratedFromElement.set(i, mapper.apply(
                     streamGeneratedFromElement.get(i)));
@@ -212,14 +214,14 @@ public class AsIntStream implements IntStream {
         return result;
     }
 
-    private class Method {
-        public final Methods method;
-        public final Object function;
-        public Method(Methods method, Object function) {
+    private static class Method {
+        private final Methods method;
+        private final Object function;
+        private Method(Methods method, Object function) {
             this.method = method;
             this.function = function;
         }
-        public DynamicList<Integer> execute(DynamicList<Integer> result) {
+        private DynamicList<Integer> execute(DynamicList<Integer> result) {
             return method.execute(result, function);
         }
     }
@@ -238,7 +240,8 @@ public class AsIntStream implements IntStream {
             }
         }, MAP {
             @Override
-            public DynamicList<Integer> execute(DynamicList<Integer> result, Object function)
+            public DynamicList<Integer> execute(DynamicList<Integer> result,
+                                                Object function)
                     throws IllegalArgumentException {
                 if (!(function instanceof IntUnaryOperator)) {
                     throw new IllegalArgumentException();
@@ -254,7 +257,8 @@ public class AsIntStream implements IntStream {
                 if (!(function instanceof IntToIntStreamFunction)) {
                     throw new IllegalArgumentException();
                 }
-                return AsIntStream.flatMap(result, (IntToIntStreamFunction) function);
+                return AsIntStream.flatMap(result,
+                        (IntToIntStreamFunction) function);
             }
         };
 
