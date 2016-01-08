@@ -347,7 +347,7 @@ public class AsIntStream implements IntStream {
             }
         };
 
-        abstract public DynamicList<Integer> execute(
+        public abstract  DynamicList<Integer> execute(
                 DynamicList<Integer> result, Object function);
     }
 }
