@@ -7,6 +7,9 @@ import ua.yandex.shad.function.IntPredicate;
 import ua.yandex.shad.function.IntConsumer;
 import ua.yandex.shad.function.IntBinaryOperator;
 
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+
 public class AsIntStream implements IntStream {
     private DynamicList<Integer> intStream;
     private DynamicList<Method> calledMethods;
@@ -29,56 +32,109 @@ public class AsIntStream implements IntStream {
 
     @Override
     public Double average() throws IllegalArgumentException {
-        DynamicList<Integer> processedStream = executeCalledMethods();
-        if (processedStream.isEmpty()) {
+        ExecuteCalledMethods elementsInStream = new ExecuteCalledMethods();
+        Double generalAverage = null;
+        long count = 0;
+        while (elementsInStream.hasNext()) {
+            DynamicList<Integer> processedElement = elementsInStream.next();
+            if (processedElement == null) {
+                continue;
+            }
+            count++;
+            Integer accumulator = 0;
+            for (Integer i : processedElement) {
+                accumulator += i;
+            }
+            double average = (double) accumulator / processedElement.size();
+            if (generalAverage != null) {
+                generalAverage += average;
+            } else {
+                generalAverage = average;
+            }
+        }
+        if (generalAverage == null) {
             throw new IllegalArgumentException();
         }
-        Integer accumulator = 0;
-        for (Integer i : processedStream) {
-            accumulator += i;
-        }
-        double average = (double) accumulator / processedStream.size();
         calledMethods = new DynamicList<>();
-        return average;
+        return generalAverage / count;
     }
 
     @Override
     public Integer max() throws IllegalArgumentException {
-        DynamicList<Integer> processedStream = executeCalledMethods();
-        if (processedStream.isEmpty()) {
-            throw new IllegalArgumentException();
-        }
-        Integer max = processedStream.get(0);
-        for (Integer i : processedStream) {
-            if (i > max) {
-                max = i;
+        ExecuteCalledMethods elementsInStream = new ExecuteCalledMethods();
+        Integer generalMax = null;
+        while (elementsInStream.hasNext()) {
+            DynamicList<Integer> processedElement = elementsInStream.next();
+            if (processedElement == null) {
+                continue;
+            }
+            Integer max = processedElement.get(0);
+            for (Integer i : processedElement) {
+                if (i > max) {
+                    max = i;
+                }
+            }
+            if (generalMax != null) {
+                generalMax = (generalMax < max) ? max : generalMax;
+            } else {
+                generalMax = max;
             }
         }
         calledMethods = new DynamicList<>();
-        return max;
+        if (generalMax == null) {
+            throw new IllegalArgumentException();
+        }
+        return generalMax;
     }
 
     @Override
     public Integer min() throws IllegalArgumentException {
-        DynamicList<Integer> processedStream = executeCalledMethods();
-        if (processedStream.isEmpty()) {
-            throw new IllegalArgumentException();
-        }
-        Integer min = processedStream.get(0);
-        for (Integer i : processedStream) {
-            if (i < min) {
-                min = i;
+        ExecuteCalledMethods elementsInStream = new ExecuteCalledMethods();
+        Integer generalMin = null;
+        while (elementsInStream.hasNext()) {
+            DynamicList<Integer> processedElement = elementsInStream.next();
+            if (processedElement == null) {
+                continue;
+            }
+            Integer min = processedElement.get(0);
+            for (Integer i : processedElement) {
+                if (i < min) {
+                    min = i;
+                }
+            }
+            if (generalMin != null) {
+                generalMin = (generalMin > min) ? min : generalMin;
+            } else {
+                generalMin = min;
             }
         }
         calledMethods = new DynamicList<>();
-        return min;
+        if (generalMin == null) {
+            throw new IllegalArgumentException();
+        }
+        return generalMin;
     }
 
     @Override
     public long count() {
-        DynamicList<Integer> processedStream = executeCalledMethods();
+        ExecuteCalledMethods elementsInStream = new ExecuteCalledMethods();
+        Long count = null;
+        while (elementsInStream.hasNext()) {
+            DynamicList<Integer> processedElement = elementsInStream.next();
+            if (processedElement == null) {
+                continue;
+            }
+            if (count != null) {
+                count += processedElement.size();
+            } else {
+                count = (long) processedElement.size();
+            }
+        }
+        if (count == null) {
+            throw new IllegalArgumentException();
+        }
         calledMethods = new DynamicList<>();
-        return processedStream.size();
+        return count;
     }
 
     @Override
@@ -97,9 +153,15 @@ public class AsIntStream implements IntStream {
         if (action == null) {
             throw new NullPointerException();
         }
-        DynamicList<Integer> processedStream = executeCalledMethods();
-        for (Integer i : processedStream) {
-            action.accept(i);
+        ExecuteCalledMethods elementsInStream = new ExecuteCalledMethods();
+        while (elementsInStream.hasNext()) {
+            DynamicList<Integer> processedElement = elementsInStream.next();
+            if (processedElement == null) {
+                continue;
+            }
+            for (Integer i : processedElement) {
+                action.accept(i);
+            }
         }
         calledMethods = new DynamicList<>();
     }
@@ -118,16 +180,29 @@ public class AsIntStream implements IntStream {
     @Override
     public int reduce(int identity, IntBinaryOperator op)
             throws NullPointerException, IllegalArgumentException {
-        DynamicList<Integer> processedStream = executeCalledMethods();
-        if (processedStream.isEmpty()) {
+        ExecuteCalledMethods elementsInStream = new ExecuteCalledMethods();
+        Integer generalAccumulator = null;
+        while (elementsInStream.hasNext()) {
+            DynamicList<Integer> processedElement = elementsInStream.next();
+            if (processedElement == null) {
+                continue;
+            }
+            Integer accumulator = op.apply(identity, processedElement.get(0));
+            for (int i = 1; i < processedElement.size(); i++) {
+                accumulator = op.apply(accumulator, processedElement.get(i));
+            }
+
+            if (generalAccumulator != null) {
+                generalAccumulator += accumulator;
+            } else {
+                generalAccumulator = accumulator;
+            }
+        }
+        if (generalAccumulator == null) {
             throw new IllegalArgumentException();
         }
-        int accumulator = op.apply(identity, processedStream.get(0));
-        for (int i = 1; i < processedStream.size(); i++) {
-            accumulator = op.apply(accumulator, processedStream.get(i));
-        }
         calledMethods = new DynamicList<>();
-        return accumulator;
+        return generalAccumulator;
     }
 
     @Override
@@ -195,23 +270,33 @@ public class AsIntStream implements IntStream {
         return result;
     }
 
-    private DynamicList<Integer> executeCalledMethods() {
-        DynamicList<Integer> result = new DynamicList<>();
-        for (Integer i : intStream) {
+    private class ExecuteCalledMethods
+            implements Iterator<DynamicList<Integer>> {
+        private Iterator<Integer> numbersInStream = intStream.iterator();
+        public boolean hasNext() {
+            return numbersInStream.hasNext();
+        }
+
+        @Override
+        public DynamicList<Integer> next() {
+            if (!hasNext()) {
+                throw new NoSuchElementException();
+            }
             DynamicList<Integer> temporary = new DynamicList<>();
-            temporary.add(i);
+            temporary.add(numbersInStream.next());
             for (Method m : calledMethods) {
                 if (temporary.isEmpty()) {
-                    break;
+                    return null;
                 } else {
                     temporary = m.execute(temporary);
                 }
             }
-            for (Integer j : temporary) {
-                result.add(j);
+            if (temporary.isEmpty()) {
+                return null;
+            } else {
+                return temporary;
             }
         }
-        return result;
     }
 
     private static class Method {
